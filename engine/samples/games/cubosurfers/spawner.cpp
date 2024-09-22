@@ -93,7 +93,7 @@ void spawnerPlugin(cubos::engine::Cubos& cubos)
                         .add(BoxCollisionShape{cubos::core::geom::Box{glm::vec3{3.0F, 7.0F, 2.0F}}})
                         .add(Rotation{})
                         .add(Collider{})
-                        .add(RenderVoxelGrid{voxelJetpack, glm::vec3{-3.0F, 0.0F, 0.0F}});
+                        .add(RenderVoxelGrid{voxelJetpack, glm::vec3{-4.0F, 0.0F, 0.0F}});
                 }
             }
         });

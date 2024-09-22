@@ -23,7 +23,6 @@
 
 #include "textUi.hpp"
 #include "player.hpp"
-// #include "jetpack.hpp"
 #include "score.hpp"
 
 using namespace cubos::engine;
@@ -52,11 +51,11 @@ void textUiPlugin(cubos::engine::Cubos& cubos)
         for(auto [player] : query)
         {
             if (player.hasArmor) 
-                ImGui::Text("Oh an Armor!\nNow u can kys :)\n");
+                ImGui::Text(">> Oh an Armor!\nNow u can kys :)");
             if (player.hasJetpack)
-                ImGui::Text("Congrats for the Jetpack!\nFly lil bird o.o\nDuration: %.2fs", score.jetpackDuration);
+                ImGui::Text(">> Congrats for the Jetpack!\nFly lil bird o.o\n\nDuration: %.2fs", score.jetpackDuration);
         }
-        ImGui::SetWindowSize(ImVec2(250, 180));
+        ImGui::SetWindowSize(ImVec2(253, 150));
         ImGui::End();
     });
 }

@@ -17,6 +17,7 @@
 #include "jetpack.hpp"
 #include "timer.hpp"
 #include "score.hpp"
+#include "jumpCoord.hpp"
 
 #include <cubos/engine/collisions/shapes/box.hpp>
 #include <cubos/engine/voxels/grid.hpp>
@@ -41,13 +42,14 @@ int main()
 
     cubos.plugin(enemyPlugin);
     cubos.plugin(timerPlugin);
+    cubos.plugin(jumpCoordPlugin);
+
     cubos.plugin(playerPlugin);
     cubos.plugin(scorePlugin);
-    
     cubos.plugin(obstaclePlugin);
 
-    cubos.plugin(jetpackPlugin);
     cubos.plugin(armorPlugin);
+    cubos.plugin(jetpackPlugin);
 
     cubos.plugin(spawnerPlugin);
     cubos.plugin(textUiPlugin);
@@ -83,15 +85,15 @@ int main()
 
     //--------------------------------------------COLLISIONS ZOMBIES--------------------------------
     cubos.system("player collide vs zombie")
-        .call([](Commands cmds, const Assets& assets, Query<Entity, Player&, const CollidingWith&, const Enemy&, Entity> collisions, Query<Entity> all, Score& score, Timer& timer) {
-            for (auto [entPlayer, player, collidingWith, enemy, zombEnt] : collisions)
+        .call([](Commands cmds, const Assets& assets, Query<Entity, Player&, const RenderVoxelGrid&, const CollidingWith&, const Enemy&, Entity> collisions, Query<Entity> all, Score& score, Timer& timer) {
+            for (auto [entPlayer, player, voxel, collidingWith, enemy, zombEnt] : collisions)
             {
                 if(player.hasArmor)
                 {
                     player.hasArmor = false;
                     cmds.remove<Armor>(entPlayer);
                     cmds.remove<RenderVoxelGrid>(entPlayer);
-                    cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerBase, glm::vec3{-4.0F, 0.0F, 0.0F}});
+                    cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerBase, voxel.offset});
                     cmds.destroy(zombEnt);
                 }
                 else
@@ -108,18 +110,6 @@ int main()
             }
         });
 
-    cubos.system("player collides vs jetpack but has armor")
-        .with<Armor>()
-        .call([](Commands cmds, Query<Entity, Player&, CollidingWith&, const Jetpack&> collisions) {
-            for (auto [entPlayer, player, collidingWith, jetpack] : collisions)
-            {
-                if(!player.hasJetpack && player.hasArmor)
-                {
-                    player.hasArmor = false;
-                    cmds.remove<Armor>(entPlayer);
-                }
-            }
-        });
     //-----------------------------------------------------------------------------------------------------<
 
     cubos.system("speed up osbstacles through the time")
@@ -128,8 +118,8 @@ int main()
             {
                 timer.totalTimePassed += dt.value();
                 obstacle.velocity.z = -100.0F - (timer.totalTimePassed * timer.timeConst); //speed up the obstacles through the time
-                CUBOS_INFO("---> Speeding: {}", obstacle.velocity.z);
-            } 
+                // CUBOS_INFO("---> Speeding: {}", obstacle.velocity.z);
+            }
         });
 
     cubos.run();

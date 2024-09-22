@@ -2,6 +2,8 @@
 #include "player.hpp"
 #include "obstacle.hpp"
 #include "score.hpp"
+#include "jumpCoord.hpp"
+#include "armor.hpp"
 
 #include <cubos/core/ecs/reflection.hpp>
 #include <cubos/core/reflection/external/primitives.hpp>
@@ -46,29 +48,34 @@ void jetpackPlugin(cubos::engine::Cubos& cubos)
     cubos.depends(transformPlugin);
     cubos.depends(renderVoxelsPlugin);
 
+    cubos.depends(jumpCoordPlugin);
+
     cubos.depends(scorePlugin);
     cubos.depends(playerPlugin);
     cubos.depends(obstaclePlugin);
+
+    cubos.depends(armorPlugin);
     
     cubos.component<Jetpack>();
 
-    cubos.system("collides to jetpack and adds it to player")
+    cubos.system("collides vs jetpack // adds to player")
         .call([](Commands cmds, Query<Entity, Player&, Position&, const RenderVoxelGrid&, CollidingWith&, const Jetpack&, Entity> collisions, Score& score) {
             for (auto [entPlayer, player, playerPos, voxel, collidingWith, jetpack, jetpackEnt] : collisions)
             {
                 if(!player.hasJetpack)
                 {
                     player.hasJetpack = true;
-                    score.jetpackDuration = 3.0F;
+                    score.jetpackDuration = 3.0F; //TIME JETPACK DEFAULT
 
                     cmds.add(entPlayer, Jetpack{});
                     cmds.remove<RenderVoxelGrid>(entPlayer);
                     cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerJetpack, voxel.offset});
-                    
 
-                    // FIXME:
-                    playerPos.vec.y += 1000.0F;
-                    CUBOS_INFO("---> Y coord: {}", playerPos.vec.y);
+                    if(player.hasArmor)
+                    {
+                        player.hasArmor = false;
+                        cmds.remove<Armor>(entPlayer);
+                    }
                 }
                 cmds.destroy(jetpackEnt);
             }
@@ -76,20 +83,42 @@ void jetpackPlugin(cubos::engine::Cubos& cubos)
 
     cubos.system("remove jetpack from player, expire")
         .with<Jetpack>()
-        .call([](Commands cmds, const DeltaTime& dt, Query<Entity, Player&, Position&, Jetpack&> query, Score& score) {
-            for (auto [entPlayer, player, playerPos, jetpack] : query)
+        .call([](Commands cmds, const DeltaTime& dt, Query<Entity, Player&, Position&, const RenderVoxelGrid&, Jetpack&> query, Score& score) {
+            for (auto [entPlayer, player, playerPos, voxel, jetpack] : query)
             {
                 jetpack.duration -= dt.value();
                 score.jetpackDuration = jetpack.duration;
                 if(jetpack.duration <= 0)
                 {
-                    // FIXME:
                     player.hasJetpack = false;
-                    playerPos.vec.y = 0.0F;
-
                     cmds.remove<Jetpack>(entPlayer);
                     cmds.remove<RenderVoxelGrid>(entPlayer);
-                    cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerBase, glm::vec3{-4.0F, 0.0F, 0.0F}});
+                    cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerBase, voxel.offset});
+                }
+            }
+        });
+        
+    cubos.system("increase Y player > gets jetpack")
+        .with<Jetpack>()
+        .call([](Query<Player&> query, const DeltaTime& dt, JumpCoord& jumpCoord) {
+            for(auto [player] : query)
+            {
+                if(jumpCoord.playerY < 18.0F)
+                {
+                    jumpCoord.playerY += 20.0F * dt.value();
+                }
+            }
+        });
+
+
+    cubos.system("decrease Y player > expire jetpack")
+        .without<Jetpack>()
+        .call([](Query<Player&> query, const DeltaTime& dt, JumpCoord& jumpCoord) {
+            for(auto [player] : query)
+            {
+                if(jumpCoord.playerY > 0.0F)
+                {
+                    jumpCoord.playerY -= 20.0F * dt.value();
                 }
             }
         });

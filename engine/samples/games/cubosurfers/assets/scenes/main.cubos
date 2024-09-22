@@ -17,14 +17,14 @@
                 "y": 0,
                 "z": 0
             },
-                  "cubos::engine::BoxCollisionShape": {
-        "box" : {
-          "x": 3.0,
-          "y": 7.0,
-          "z": 2.0 
+            "cubos::engine::BoxCollisionShape": {
+                "box" : {
+                "x": 3.0,
+                "y": 7.0,
+                "z": 2.0 
+                },
+            "changed" : true
         },
-        "changed" : true
-      },
             "cubos::engine::Collider": {},
             "Player": {
                 "speed": 5,

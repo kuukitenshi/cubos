@@ -48,18 +48,21 @@ void armorPlugin(cubos::engine::Cubos& cubos)
     
     cubos.component<Armor>();
 
-    cubos.system("add armor to player, player vs armor collide")
+    cubos.system("add armor to player // player vs armor collide")
         .call([](Commands cmds, Query<Entity, Player&, const RenderVoxelGrid&, const CollidingWith&, const Armor&, Entity> collisions) {
             for (auto [entPlayer, player, voxel, collidingWith, armor, entArmor] : collisions)
             {
-                if(!player.hasArmor)
+                if(!player.hasJetpack)
                 {
-                    player.hasArmor = true;
-                    cmds.add(entPlayer, Armor{});
-                    cmds.remove<RenderVoxelGrid>(entPlayer);
-                    cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerArmor, voxel.offset});
+                    if(!player.hasArmor)
+                    {
+                        player.hasArmor = true;
+                        cmds.add(entPlayer, Armor{});
+                        cmds.remove<RenderVoxelGrid>(entPlayer);
+                        cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerArmor, voxel.offset});
+                    }
+                    cmds.destroy(entArmor);
                 }
-                cmds.destroy(entArmor);
             }
         });
 }

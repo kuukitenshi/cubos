@@ -15,10 +15,10 @@ struct Spawner
     float accumulator{0.0F};                          // Time accumulator
 
     float accPowerUpArmor{0.0F};                         
-    float periodPowerUpArmor{3.7F};
+    float periodPowerUpArmor{3.4F};
 
     float accPowerUpJetpack{0.0F};                 
-    float periodPowerUpJetpack{5.3F};                     
+    float periodPowerUpJetpack{4.8F};                     
 };
 
 void spawnerPlugin(cubos::engine::Cubos& cubos);
