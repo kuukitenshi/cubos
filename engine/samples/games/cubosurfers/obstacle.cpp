@@ -1,5 +1,6 @@
 #include "obstacle.hpp"
 #include "textUi.hpp"
+#include "score.hpp"
 
 #include <cubos/core/ecs/reflection.hpp>
 #include <cubos/core/reflection/external/glm.hpp>
@@ -24,20 +25,19 @@ void obstaclePlugin(cubos::engine::Cubos& cubos)
     cubos.depends(assetsPlugin);
     cubos.depends(transformPlugin);
     
-    cubos.depends(textUiPlugin);
+    cubos.depends(scorePlugin);
     
     cubos.component<Obstacle>();
 
     cubos.system("move obstacles")
-        .call([](Commands cmds, const DeltaTime& dt, Query<Entity, const Obstacle&, Position&> obstacles, TextUi& text) {
+        .call([](Commands cmds, const DeltaTime& dt, Query<Entity, const Obstacle&, Position&> obstacles, Score& score) {
             for (auto [ent, obstacle, position] : obstacles)
             {
                 position.vec += obstacle.velocity * dt.value();
                 position.vec.y = glm::abs(glm::sin(position.vec.z * 0.15F)) * 1.5F;
-
                 if (position.vec.z < obstacle.killZ)
                 {
-                    text.score++;
+                    score.score++;
                     cmds.destroy(ent);
                 }
             }

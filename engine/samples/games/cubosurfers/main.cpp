@@ -15,6 +15,15 @@
 #include "textUi.hpp"
 #include "enemy.hpp"
 #include "jetpack.hpp"
+#include "timer.hpp"
+#include "score.hpp"
+
+#include <cubos/engine/collisions/shapes/box.hpp>
+#include <cubos/engine/voxels/grid.hpp>
+#include <cubos/engine/render/voxels/plugin.hpp>
+#include <cubos/engine/render/voxels/grid.hpp>
+#include <cubos/engine/collisions/collider.hpp>
+#include <cubos/engine/collisions/plugin.hpp>
 
 using namespace cubos::engine;
 
@@ -22,8 +31,7 @@ static const Asset<Scene> SceneAsset = AnyAsset("ee5bb451-05b7-430f-a641-a746f70
 static const Asset<VoxelPalette> PaletteAsset = AnyAsset("101da567-3d23-46ae-a391-c10ec00e8718");
 static const Asset<InputBindings> InputBindingsAsset = AnyAsset("b20900a4-20ee-4caa-8830-14585050bead");
 
-float totalTimePassed = 0.0f;
-float const timeConst = 0.01f;
+static const Asset<VoxelGrid> voxelPlayerBase = AnyAsset("57d1b886-8543-4b8b-8f78-d911e9c4f896");
 
 int main()
 {
@@ -32,14 +40,17 @@ int main()
     cubos.plugin(defaultsPlugin);
 
     cubos.plugin(enemyPlugin);
+    cubos.plugin(timerPlugin);
     cubos.plugin(playerPlugin);
-    cubos.plugin(textUiPlugin);
+    cubos.plugin(scorePlugin);
+    
     cubos.plugin(obstaclePlugin);
 
     cubos.plugin(jetpackPlugin);
     cubos.plugin(armorPlugin);
 
     cubos.plugin(spawnerPlugin);
+    cubos.plugin(textUiPlugin);
 
     cubos.startupSystem("configure settings").tagged(settingsTag).call([](Settings& settings) {
         settings.setString("assets.io.path", SAMPLE_ASSETS_FOLDER);
@@ -54,82 +65,69 @@ int main()
             environment.skyGradient[1] = {0.6F, 0.6F, 0.8F};
             input.bind(*assets.read(InputBindingsAsset));
             commands.spawn(assets.read(SceneAsset)->blueprint);
-            totalTimePassed = 0.0f;
         });
 
     cubos.system("restart the game on input")
-        .call([](Commands cmds, const Assets& assets, const Input& input, Query<Entity> all, TextUi& text) {
+        .call([](Commands cmds, const Assets& assets, const Input& input, Query<Entity> all, Score& score, Timer& timer) {
             if (input.justPressed("restart"))
             {
-                totalTimePassed = 0.0f;
+                timer.totalTimePassed = 0.0F;
                 for (auto [ent] : all)
                 {
-                    text.score = 0;
+                    score.score = 0;
                     cmds.destroy(ent);
                 }
                 cmds.spawn(assets.read(SceneAsset)->blueprint);
             }
         });
 
-    cubos.system("player vs enemy collisions")
-        .call([](Commands cmds, const Assets& assets, Query<Player&, const CollidingWith&, const Enemy&, Entity> collisions, Query<Entity> all, TextUi& text) {
-            for (auto [player, collidingWith, enemy, zombEnt] : collisions)
+    //--------------------------------------------COLLISIONS ZOMBIES--------------------------------
+    cubos.system("player collide vs zombie")
+        .call([](Commands cmds, const Assets& assets, Query<Entity, Player&, const CollidingWith&, const Enemy&, Entity> collisions, Query<Entity> all, Score& score, Timer& timer) {
+            for (auto [entPlayer, player, collidingWith, enemy, zombEnt] : collisions)
             {
-                CUBOS_INFO("Player collided with an obstacle without armor!"); // restart when the player colides with an obstacle
-                totalTimePassed = 0.0f;
-                if (player.hasArmor)
+                if(player.hasArmor)
                 {
                     player.hasArmor = false;
+                    cmds.remove<Armor>(entPlayer);
+                    cmds.remove<RenderVoxelGrid>(entPlayer);
+                    cmds.add(entPlayer, RenderVoxelGrid{voxelPlayerBase, glm::vec3{-4.0F, 0.0F, 0.0F}});
                     cmds.destroy(zombEnt);
                 }
                 else
                 {
+                    timer.totalTimePassed = 0.0F;
                     for (auto [ent] : all)
                     {
-                        text.score = 0;
+                        score.score = 0;
                         cmds.destroy(ent);
                     }
                     cmds.spawn(assets.read(SceneAsset)->blueprint);
-                    (void)player; // here to shut up 'unused variable warning', you can remove it
+                    (void)player;
                 }
             }
         });
 
-    cubos.system("player with armor vs enemy collisions")
-        .call([](Commands cmds, Query<Player&, const CollidingWith&, const Armor&, Entity> collisions) {
-            for (auto [player, collidingWith, armor, ent] : collisions)
+    cubos.system("player collides vs jetpack but has armor")
+        .with<Armor>()
+        .call([](Commands cmds, Query<Entity, Player&, CollidingWith&, const Jetpack&> collisions) {
+            for (auto [entPlayer, player, collidingWith, jetpack] : collisions)
             {
-                CUBOS_INFO("Player collided with an armor!");
-                if (!player.hasArmor)
+                if(!player.hasJetpack && player.hasArmor)
                 {
-                    player.hasArmor = true;
+                    player.hasArmor = false;
+                    cmds.remove<Armor>(entPlayer);
                 }
-                cmds.destroy(ent);
             }
         });
-
-    cubos.system("player vs jetpack collisions")
-        .call([](Commands cmds, Query<Player&, const CollidingWith&, const Jetpack&, Entity> collisions) {
-            for (auto [player, collidingWith, jetpack, ent] : collisions)
-            {
-                CUBOS_INFO("Player collided with an jetpack!");
-                if (!player.hasJetpack)
-                {
-                    player.hasJetpack = true;
-                }
-                cmds.destroy(ent);
-                // TODO: VOAR
-                
-            }
-        });
-
+    //-----------------------------------------------------------------------------------------------------<
 
     cubos.system("speed up osbstacles through the time")
-        .call([](Query<Obstacle&> obstacles, const DeltaTime& dt) {
+        .call([](Query<Obstacle&> obstacles, const DeltaTime& dt, Timer& timer) {
             for (auto [obstacle] : obstacles)
             {
-                totalTimePassed += dt.value();
-                obstacle.velocity.z += obstacle.velocity.z * totalTimePassed * dt.value() * timeConst;//speed up the obstacles through the time
+                timer.totalTimePassed += dt.value();
+                obstacle.velocity.z = -100.0F - (timer.totalTimePassed * timer.timeConst); //speed up the obstacles through the time
                 CUBOS_INFO("---> Speeding: {}", obstacle.velocity.z);
             } 
         });

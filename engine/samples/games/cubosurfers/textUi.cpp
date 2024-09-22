@@ -23,14 +23,14 @@
 
 #include "textUi.hpp"
 #include "player.hpp"
+// #include "jetpack.hpp"
+#include "score.hpp"
 
 using namespace cubos::engine;
 
 CUBOS_REFLECT_IMPL(TextUi)
 {
-    return cubos::core::ecs::TypeBuilder<TextUi>("textUi")
-        .withField("score", &TextUi::score)
-        .build();
+    return cubos::core::ecs::TypeBuilder<TextUi>("textUi").build();
 }
 
 void textUiPlugin(cubos::engine::Cubos& cubos)
@@ -40,23 +40,23 @@ void textUiPlugin(cubos::engine::Cubos& cubos)
     cubos.depends(renderTargetPlugin);
     cubos.depends(imguiPlugin);
 
+    cubos.depends(scorePlugin);
+    
     cubos.depends(playerPlugin);
 
-    cubos.resource<TextUi>();
-
-   cubos.system("show ImGui score").tagged(imguiTag)
-        .call([](TextUi& text, Query<Player&> query) {
+    cubos.system("show ImGui score").tagged(imguiTag)
+        .call([](Query<Player&> query, Score& score) {
         
         ImGui::Begin("Info Window");
-        ImGui::Text("Score: %d \n", text.score);
+        ImGui::Text("Score: %d\n", score.score);
         for(auto [player] : query)
         {
-            if (player.hasArmor)
-                ImGui::Text("Congrats u have an Armor! \nNow u can kys :)\n");
+            if (player.hasArmor) 
+                ImGui::Text("Oh an Armor!\nNow u can kys :)\n");
             if (player.hasJetpack)
-                ImGui::Text("Congrats u have a Jetpack! \nFly lil bird :)\n");
+                ImGui::Text("Congrats for the Jetpack!\nFly lil bird o.o\nDuration: %.2fs", score.jetpackDuration);
         }
-        ImGui::SetWindowSize(ImVec2(250, 130));
+        ImGui::SetWindowSize(ImVec2(250, 180));
         ImGui::End();
     });
 }

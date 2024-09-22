@@ -86,7 +86,8 @@ void spawnerPlugin(cubos::engine::Cubos& cubos)
                 if(spawner.accPowerUpJetpack >= spawner.periodPowerUpJetpack)
                 {
                     Position spawnPosition = genSpawnPos(spawner.accPowerUpJetpack, spawner.periodPowerUpJetpack, position, spawner);
-                    commands.create().add(Jetpack{})
+                    commands.create()
+                        .add(Jetpack{})
                         .add(Obstacle{glm::vec3{0.0F, 0.0F, -100.0F}})
                         .add(spawnPosition)
                         .add(BoxCollisionShape{cubos::core::geom::Box{glm::vec3{3.0F, 7.0F, 2.0F}}})

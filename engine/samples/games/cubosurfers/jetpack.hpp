@@ -6,8 +6,7 @@ struct Jetpack
 {
     CUBOS_REFLECT;
 
-    float duration{5.0F};
-    float remainingTime{5.0F};
+    float duration{3.0F};
 };
 
 void jetpackPlugin(cubos::engine::Cubos& cubos);

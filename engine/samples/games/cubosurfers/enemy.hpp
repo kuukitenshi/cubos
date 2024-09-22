@@ -4,8 +4,7 @@
 
 struct Enemy
 {
-    CUBOS_REFLECT;
-         
+    CUBOS_REFLECT;  
 };
 
 void enemyPlugin(cubos::engine::Cubos& cubos);
