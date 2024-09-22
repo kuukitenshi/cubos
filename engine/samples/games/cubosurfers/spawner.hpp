@@ -13,6 +13,12 @@ struct Spawner
     float period{1.0F};                               // Time between spawns in seconds
     float laneWidth{1.0F};                            // Width of the lane
     float accumulator{0.0F};                          // Time accumulator
+
+    float accPowerUpArmor{0.0F};                         
+    float periodPowerUpArmor{2.3F};
+
+    float accPowerUpJetpack{0.0F};                 
+    float periodPowerUpJetpack{2.78F};                     
 };
 
 void spawnerPlugin(cubos::engine::Cubos& cubos);

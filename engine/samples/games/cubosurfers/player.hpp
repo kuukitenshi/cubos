@@ -10,6 +10,9 @@ struct Player
     float laneWidth{1.0F}; // Width of the lane
     int lane{0};           // Current lane
     int targetLane{0};     // Target lane
+
+    bool hasArmor{false};
+    bool hasJetpack{false};
 };
 
 void playerPlugin(cubos::engine::Cubos& cubos);
